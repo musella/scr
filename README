@@ -1,10 +1,38 @@
-scr utilities
---------------
+scr README
+----------
 
 Utilities to keep track of open screen sessions in a distributed cluster.
 
-scr-l: list available screens
+scr:   start screen session and register it in the list of screens.
 
-scr-u: update list of available screens
+scr-l: list available screens.
 
-scr-r: resume screen session
+scr-u: update list of available screens.
+
+scr-r: resume screen session.
+
+Usage example
+-------------
+
+[ me@mybox ] $ ssh service
+
+# start screen session
+[ me@service123 ] $ scr
+
+[ me@service123 ] $ echo "This is my screen"
+
+# detach, logout and call it a dayx
+[ me@service123 ] $ logout
+
+# the day after
+[ me@mybox ] $ ssh service
+
+# where did I leave my screen session running?
+[ me@service124 ] $ scr-l
+service123
+
+# ok resume it
+[ me@service123 ] $ scr-r
+ssh -XY -t service123 ./scr-r -rd localhost
+
+[ me@service123 ] $ echo "This is my screen"

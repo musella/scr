@@ -31,7 +31,7 @@ remote_screen()
 	fi
     fi
     [[ -z "$HOST" ]] && return;
-    set -x
+
     COMMAND="screen $OPTIONS"
     if [[ "$HOST" == "localhost" ]]; then
 	echo $DISPLAY > ${DIR}/`hostname`
@@ -39,6 +39,7 @@ remote_screen()
 	echo $DISPLAY > ${DIR}/$HOST
     fi
     [[ "$HOST" != `hostname` && "$HOST" != "localhost" ]] && COMMAND="ssh -XY -t $HOST $(dirname $0)/scr-r $OPTIONS localhost"
+    echo $COMMAND
     exec $COMMAND
 }
 
