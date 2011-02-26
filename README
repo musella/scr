@@ -1,0 +1,10 @@
+scr utilities
+--------------
+
+Utilities to keep track of open screen sessions in a distributed cluster.
+
+scr-l: list available screens
+
+scr-u: update list of available screens
+
+scr-r: resume screen session
