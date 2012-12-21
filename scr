@@ -13,6 +13,13 @@ start_screen()
     exec screen $@
 }
 
+get_host()
+{
+    HOST=$1
+    [[ -h ${DIR}/${HOST} ]] && HOST=$(readlink ${DIR}/${HOST})
+    echo $HOST
+}
+
 remote_screen()
 {
     while [[ -n $2 ]]; do 
@@ -21,7 +28,7 @@ remote_screen()
     if [[ -z $OPTIONS ]]; then
 	OPTIONS="-rd"
     fi
-    HOST=$1 && shift;
+    HOST=$(get_host $1) && shift;
     if [[ -z $HOST ]]; then
 	update_screens 
 	if [[ -n `list_screens | grep \`hostname\`` ]]; then
@@ -31,7 +38,7 @@ remote_screen()
 	fi
     fi
     [[ -z "$HOST" ]] && return;
-
+    set -x
     COMMAND="screen $OPTIONS"
     if [[ "$HOST" == "localhost" ]]; then
 	echo $DISPLAY > ${DIR}/`hostname`
@@ -39,18 +46,30 @@ remote_screen()
 	echo $DISPLAY > ${DIR}/$HOST
     fi
     [[ "$HOST" != `hostname` && "$HOST" != "localhost" ]] && COMMAND="ssh -XY -t $HOST $(dirname $0)/scr-r $OPTIONS localhost"
-    echo $COMMAND
     exec $COMMAND
 }
 
 update_screens()
 {
-    for HOST in `list_screens`; do
+    for HOST in `list_screens -r`; do
 	echo $HOST
-	OUTPUT=`ssh $HOST "screen -wipe >& /dev/null; screen -ls 2>/dev/null"`
+	OUTPUT=`ssh $(get_host $HOST) "screen -wipe >& /dev/null; screen -ls 2>/dev/null"`
 	[[ -n `echo $OUTPUT | grep -i "^no"` ]] && rm $DIR/$HOST
 	echo $OUTPUT
     done
+}
+
+link_screen()
+{
+    cd $DIR
+    if [[ -z $2 ]]; then
+	ln -sf $HOST $1
+	cd -
+	shift
+	start_screen $@
+    else
+	ln -sf $1 $2
+    fi
 }
 
 list_screens()
@@ -66,6 +85,8 @@ case $CALLED_AS in
     scr-l) list_screens $@;
 	;;
     scr-r) remote_screen $@;
+	;;
+    scr-a) link_screen $@;
 	;;
 esac
 
