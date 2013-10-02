@@ -1,0 +1,93 @@
+#!/bin/bash
+
+CALLED_AS=`basename $0`
+
+DIR=${HOME}/.myscreens
+
+[[ ! -d $DIR ]] && mkdir $DIR
+
+start_screen()
+{
+    echo $DISPLAY > ${DIR}/`hostname`
+#    touch ${DIR}/`hostname`
+    exec screen $@
+}
+
+get_host()
+{
+    HOST=$1
+    [[ -h ${DIR}/${HOST} ]] && HOST=$(readlink ${DIR}/${HOST})
+    echo $HOST
+}
+
+remote_screen()
+{
+    while [[ -n $2 ]]; do 
+	OPTIONS="$OPTIONS $1" && shift
+    done
+    if [[ -z $OPTIONS ]]; then
+	OPTIONS="-rd"
+    fi
+    HOST=$(get_host $1) && shift;
+    if [[ -z $HOST ]]; then
+	update_screens 
+	if [[ -n `list_screens | grep \`hostname\`` ]]; then
+	    HOST=`hostname`
+	else
+	    HOST=`list_screens | head -1`  
+	fi
+    fi
+    [[ -z "$HOST" ]] && return;
+    set -x
+    COMMAND="screen $OPTIONS"
+    if [[ "$HOST" == "localhost" ]]; then
+	echo $DISPLAY > ${DIR}/`hostname`
+    else
+	echo $DISPLAY > ${DIR}/$HOST
+    fi
+    [[ "$HOST" != `hostname` && "$HOST" != "localhost" ]] && COMMAND="ssh -XY -t $HOST $(dirname $0)/scr-r $OPTIONS localhost"
+    exec $COMMAND
+}
+
+update_screens()
+{
+    for HOST in `list_screens -r`; do
+	echo $HOST
+	OUTPUT=`ssh $(get_host $HOST) "screen -wipe >& /dev/null; screen -ls 2>/dev/null"`
+	[[ -n `echo $OUTPUT | grep -i "^no"` ]] && rm $DIR/$HOST
+	echo $OUTPUT
+    done
+}
+
+link_screen()
+{
+    cd $DIR
+    if [[ -z $2 ]]; then
+	ln -sf $HOST $1
+	cd -
+	shift
+	start_screen $@
+    else
+	ln -sf $1 $2
+    fi
+}
+
+list_screens()
+{
+    ls -t $DIR
+}
+
+case $CALLED_AS in
+    scr) start_screen $@;
+	;;
+    scr-u) update_screens $@;
+	;;
+    scr-l) list_screens $@;
+	;;
+    scr-r) remote_screen $@;
+	;;
+    scr-a) link_screen $@;
+	;;
+esac
+
+exit 0
