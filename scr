@@ -52,9 +52,14 @@ remote_screen()
 update_screens()
 {
     for HOST in `list_screens -r`; do
-	echo $HOST
-	OUTPUT=`ssh $(get_host $HOST) "screen -wipe >& /dev/null; screen -ls 2>/dev/null"`
-	[[ -n `echo $OUTPUT | grep -i "^no"` ]] && rm $DIR/$HOST
+	echo -e "\n$HOST:\n-------------------"
+	OUTPUT=$(ssh $(get_host $HOST) "screen -wipe >& /dev/null; screen -ls 2>/dev/null" 2>/dev/null)
+	if [[ $? == 255 ]] || [[ -n `echo $OUTPUT | grep -i "^no"` ]]; then
+	    echo "No screen or no host found."
+	    rm $DIR/$HOST
+	else
+	    echo "$OUTPUT"
+	fi
 	echo $OUTPUT
     done
 }
@@ -63,7 +68,7 @@ link_screen()
 {
     cd $DIR
     if [[ -z $2 ]]; then
-	ln -sf $HOST $1
+	ln -sf $(hostname) $1
 	cd -
 	shift
 	start_screen $@
